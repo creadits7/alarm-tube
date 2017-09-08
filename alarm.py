@@ -63,7 +63,7 @@ def get_url():
     # return URL of random song
     return song
 
-# Gets the song title from between the 'title' HTML tags and changes the &#39; to an apostrophe if it exists.
+# Gets the song title using RE on the HTML tags
 def get_song_name(url):
     r = requests.get(url)
 
@@ -76,6 +76,7 @@ def get_song_name(url):
     for i in mo.groups(0):
         songtitle += i
 
+    #Replaces the HTML code for apostrophe with the symbol
     return re.sub(r'&#39;', "\'", songtitle)
 
 

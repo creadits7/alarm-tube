@@ -1,22 +1,29 @@
 from time import sleep, strftime
-from sys import argv
-from random import randint
+from sys import argv, platform
+import random
 import webbrowser
 import re
 import requests
 from os import system
 
+#Point to file containing Youtube video URLs
+file_containing_urls = "Videos.txt"
 
 #  pulls a youtube URL from Videos.txt at random
-def get_url():
-    f = open("Videos.txt", 'r')
+def get_url(filename):
+    try:
+        f = open(filename, 'r')
+    #Exit program is file is not found
+    except FileNotFoundError:
+        print("Error: Could not find file '" + filename + "'")
+        exit(0)
     songs = []
     # add songs in list to songs[]
     for line in f:
-        if not line.startswith("#") and "." in line:
+        if not line.startswith("#") and is_web_url(line):
             songs.append(line)
     # pick a random song and store it in song variable
-    song = songs[randint(0, len(songs) - 1)]
+    song = random.choice(songs)
     f.close()
     # return URL of random song
     return song
@@ -25,21 +32,40 @@ def get_url():
 def get_song_name(url):
     r = requests.get(url)
 
-    songTitleRegex = re.compile(r'(?<=<title>)([\S\s]+)(?=</title>)')
+    url_attempts = []
 
-    mo = songTitleRegex.search(r.text)
+    #Makes 3 attempts at new URLs if a bad status code is given
+    for i in range(3):
+        if r.status_code < 250:
+            break
+        else:
+            url_attempts.append(url)
+            url = get_url()
+            r = requests.get(url)
 
-    songtitle = ""
+    if r.status_code > 250:
+        print("Could not access video URLs. Please check network connection")
+        print("Tried the following URLs before failing:")
+        for i in url_attempts:
+            print("\t" + i)
+        exit(0)
 
-    for i in mo.groups(0):
-        songtitle += i
+
+
+    song_title_regex = re.compile(r'<title>([\S\s]+)</title>')
+
+    mo = song_title_regex.search(r.text)
+
+    song_title = mo.groups(0)[0]
+
 
     #Replaces the HTML code for apostrophe with the symbol
-    return re.sub(r'&#39;', "\'", songtitle)
+    return re.sub(r'&#39;', "\'", song_title)
 
+def is_web_url(text):
+    return re.match(r'(http://|https://|www.)(www\.)?([a-zA-Z0-9-_.]+)(\.[a-zA-Z0-9]{2,4})(\S+)', text)
 
-if __name__ == "__main__":
-
+def main():
     # If less or more than 3 arguments do not run script
     if len(argv) != 4:
         print("No arguments given or invalid format. Please enter a time. "
@@ -66,15 +92,25 @@ if __name__ == "__main__":
             sleep(1)
             current_time = strftime("%H:%M:%S")
         else:
-            # open web browser window for youtube
-            # call get_url function to pull video from txt file
-            system("clear")
+            if platform.startswith("win"):
+                clear_screen = "cls"
+            else:
+                clear_screen = "clear"
+
+            system(clear_screen)
             print("Alarm time: %s" % alarm_time)
-            url = get_url()
+            # call get_url function to pull video from txt file
+            url = get_url(file_containing_urls)
             print("-" * 50)
             print(get_song_name(url))
             print("-" * 50)
             webbrowser.register('firefox', None)
+            # open web browser window for youtube
             webbrowser.open(url)
             sleep(1)
             current_time = strftime("%H:%M:%S")
+
+
+if __name__ == "__main__":
+    main()
+

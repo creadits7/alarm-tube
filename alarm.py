@@ -25,32 +25,22 @@ def get_url(filename):
     # pick a random song and store it in song variable
     song = random.choice(songs)
     f.close()
-    # return URL of random song
+
+    # verify connection to URL
+    try:
+        r = requests.get(song)
+
+    except requests.exceptions.RequestException:
+        print("Error: Could not connect to URL: ", song)
+        exit(0)
+
+    # return song URL
     return song
+
 
 # Gets the song title using RE on the HTML tags
 def get_song_name(url):
     r = requests.get(url)
-
-    url_attempts = []
-
-    #Makes 3 attempts at new URLs if a bad status code is given
-    for i in range(3):
-        if r.status_code < 250:
-            break
-        else:
-            url_attempts.append(url)
-            url = get_url()
-            r = requests.get(url)
-
-    if r.status_code > 250:
-        print("Could not access video URLs. Please check network connection")
-        print("Tried the following URLs before failing:")
-        for i in url_attempts:
-            print("\t" + i)
-        exit(0)
-
-
 
     song_title_regex = re.compile(r'<title>([\S\s]+)</title>')
 

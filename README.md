@@ -9,6 +9,4 @@ Usage:
 
 Feedback and suggestions are more than welcome, this is one of the first programs I have created.
 
-NOTE: If using Windows, remove the system("clear") on line 40 or replace "clear" with "cls"
-I could not find an elegant way to change this depending on the OS
 

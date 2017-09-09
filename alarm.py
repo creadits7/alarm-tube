@@ -7,12 +7,43 @@ import requests
 from os import system
 
 
+#  pulls a youtube URL from Videos.txt at random
+def get_url():
+    f = open("Videos.txt", 'r')
+    songs = []
+    # add songs in list to songs[]
+    for line in f:
+        if not line.startswith("#") and "." in line:
+            songs.append(line)
+    # pick a random song and store it in song variable
+    song = songs[randint(0, len(songs) - 1)]
+    f.close()
+    # return URL of random song
+    return song
 
-def set_alarm():
+# Gets the song title using RE on the HTML tags
+def get_song_name(url):
+    r = requests.get(url)
+
+    songTitleRegex = re.compile(r'(?<=<title>)([\S\s]+)(?=</title>)')
+
+    mo = songTitleRegex.search(r.text)
+
+    songtitle = ""
+
+    for i in mo.groups(0):
+        songtitle += i
+
+    #Replaces the HTML code for apostrophe with the symbol
+    return re.sub(r'&#39;', "\'", songtitle)
+
+
+if __name__ == "__main__":
+
     # If less or more than 3 arguments do not run script
     if len(argv) != 4:
         print("No arguments given or invalid format. Please enter a time. "
-        "Format is HH MM SS (24hr). Example: alarm.py 19 30 00")
+              "Format is HH MM SS (24hr). Example: alarm.py 19 30 00")
         print("Current time is ", strftime("%H:%M:%S"))
         exit()
 
@@ -47,38 +78,3 @@ def set_alarm():
             webbrowser.open(url)
             sleep(1)
             current_time = strftime("%H:%M:%S")
-
-
-#  pulls a youtube URL from Videos.txt at random
-def get_url():
-    f = open("Videos.txt", 'r')
-    songs = []
-    # add songs in list to songs[]
-    for line in f:
-        if line[0] != "#" and "." in line:
-            songs.append(line)
-    # pick a random song and store it in song variable
-    song = songs[randint(0, len(songs) - 1)]
-    f.close()
-    # return URL of random song
-    return song
-
-# Gets the song title using RE on the HTML tags
-def get_song_name(url):
-    r = requests.get(url)
-
-    songTitleRegex = re.compile(r'(?<=<title>)([\S\s]+)(?=</title>)')
-
-    mo = songTitleRegex.search(r.text)
-
-    songtitle = ""
-
-    for i in mo.groups(0):
-        songtitle += i
-
-    #Replaces the HTML code for apostrophe with the symbol
-    return re.sub(r'&#39;', "\'", songtitle)
-
-
-if __name__ == "__main__":
-    set_alarm()

@@ -15,8 +15,8 @@ def get_url(filename):
         f = open(filename, 'r')
     #Exit program is file is not found
     except FileNotFoundError:
-        print("Error: Could not find file '" + filename + "'")
-        exit(0)
+        raise("Error: Could not find file '" + filename + "'")
+        
     songs = []
     # add songs in list to songs[]
     for line in f:

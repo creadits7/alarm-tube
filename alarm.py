@@ -10,7 +10,7 @@ from os import system, path
 FILE_CONTAINING_URLS = "Videos.txt"
 
 # Check if Operating System is Windows
-windows_os = platform.startswith("win")
+WINDOWS_OS = platform.startswith("win")
 
 # Number of times to retry with a new URL before failing
 RETRY_COUNT = 10
@@ -113,7 +113,7 @@ def main():
             sleep(1)
             current_time = strftime("%H:%M:%S")
         else:
-            if windows_os:
+            if WINDOWS_OS:
                 clear_screen = "cls"
             else:
                 clear_screen = "clear"

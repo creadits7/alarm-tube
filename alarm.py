@@ -13,7 +13,7 @@ FILE_CONTAINING_URLS = "Videos.txt"
 WINDOWS_OS = platform.startswith("win")
 
 # Number of times to retry with a new URL before failing
-RETRY_COUNT = 10
+RETRY_COUNT = 3
 
 if not path.isfile(FILE_CONTAINING_URLS):
     print("Error: Could not find file '%s'" % FILE_CONTAINING_URLS)

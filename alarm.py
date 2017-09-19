@@ -4,56 +4,87 @@ import random
 import webbrowser
 import re
 import requests
-from os import system
+from os import system, path
 
-#Point to file containing Youtube video URLs
-file_containing_urls = "Videos.txt"
+# Point to file containing Youtube video URLs
+FILE_CONTAINING_URLS = "Videos.txt"
 
-#  pulls a youtube URL from Videos.txt at random
-def get_url(filename):
-    try:
-        f = open(filename, 'r')
-    #Exit program is file is not found
-    except FileNotFoundError:
-        raise("Error: Could not find file '" + filename + "'")
-        
+# Check if Operating System is Windows
+windows_os = platform.startswith("win")
+
+# Number of times to retry with a new URL before failing
+RETRY_COUNT = 10
+
+if not path.isfile(FILE_CONTAINING_URLS):
+    print("Error: Could not find file '%s'" % FILE_CONTAINING_URLS)
+    print("Please make sure it is in the same directory as \"alarm.py\"")
+    exit(1)
+
+
+def fetch_song_data(url):
+    """Fetch song data from url"""
+    response = requests.get(url)
+    return response.text
+
+
+def video_is_available(url):
+    """Checks to make sure the video is available (not just the web page)"""
+    vid_unavail_regex = re.compile(r'(Sorry about that\.)')
+    response = requests.get(url)
+    match = vid_unavail_regex.search(response.text)
+
+    if match is None:
+        return True
+    else:
+        return False
+
+
+def get_url():
+    """Pulls a youtube URL from Videos.txt at random"""
     songs = []
-    # add songs in list to songs[]
-    for line in f:
-        if not line.startswith("#") and is_web_url(line):
-            songs.append(line)
+    with open(FILE_CONTAINING_URLS) as f:
+        for line in f:
+            if not line.startswith("#") and is_web_url(line):
+                songs.append(line)
+
     # pick a random song and store it in song variable
     song = random.choice(songs)
-    f.close()
 
-    # verify connection to URL
-    try:
-        r = requests.get(song)
+    url_attempts = []
 
-    except requests.exceptions.RequestException:
-        print("Error: Could not connect to URL: ", song)
-        exit(0)
+    for x in range(RETRY_COUNT):
+        response = requests.get(song)
+        # check if URL is valid and also make sure video is available
+        if response.ok and video_is_available(song):
+            return song
+        # store failed URL
+        url_attempts.append(song)
+        # choose new random song
+        song = random.choice(songs)
 
-    # return song URL
-    return song
+    print("Could not access video URLs. Please check network connection")
+    print("Tried the following URLs before failing:")
+    print("\n".join(url_attempts))
+    exit(1)
 
 
 # Gets the song title using RE on the HTML tags
-def get_song_name(url):
-    r = requests.get(url)
-
+def parse_song_data(data):
+    """Returns the song title from <title> HTML tags"""
     song_title_regex = re.compile(r'<title>([\S\s]+)</title>')
 
-    mo = song_title_regex.search(r.text)
+    match = song_title_regex.search(data)
 
-    song_title = mo.groups(0)[0]
+    song_title = match.groups(0)[0]
 
-
-    #Replaces the HTML code for apostrophe with the symbol
+    # Replaces the HTML code for apostrophe with the symbol
     return re.sub(r'&#39;', "\'", song_title)
 
+
 def is_web_url(text):
+    """Regex test to make sure URL is in valid format"""
     return re.match(r'(http://|https://|www.)(www\.)?([a-zA-Z0-9-_.]+)(\.[a-zA-Z0-9]{2,4})(\S+)', text)
+
 
 def main():
     # If less or more than 3 arguments do not run script
@@ -82,21 +113,27 @@ def main():
             sleep(1)
             current_time = strftime("%H:%M:%S")
         else:
-            if platform.startswith("win"):
+            if windows_os:
                 clear_screen = "cls"
             else:
                 clear_screen = "clear"
 
+            # clear the terminal screen
             system(clear_screen)
+
+            # print alarm time
             print("Alarm time: %s" % alarm_time)
-            # call get_url function to pull video from txt file
-            url = get_url(file_containing_urls)
+            # pull random video URL from text file
+            url = get_url()
             print("-" * 50)
-            print(get_song_name(url))
+            # print song title
+            print(parse_song_data(fetch_song_data(url)))
             print("-" * 50)
-            webbrowser.register('firefox', None)
+
             # open web browser window for youtube
             webbrowser.open(url)
+
+            # update time every second
             sleep(1)
             current_time = strftime("%H:%M:%S")
 
